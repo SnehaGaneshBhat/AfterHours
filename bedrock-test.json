@@ -1,0 +1,16 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "text": "Reply with exactly: AFTERHOURS CONNECTION TEST PASSED"
+        }
+      ]
+    }
+  ],
+  "inferenceConfig": {
+    "maxTokens": 50,
+    "temperature": 0
+  }
+}
