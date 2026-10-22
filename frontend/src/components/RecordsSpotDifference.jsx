@@ -478,9 +478,10 @@ function RecordsSpotDifference({ game, setGame, narrator, onNarrate, onBack, onR
         <figcaption><span>{label}</span><span>{altered ? `${foundCount} / ${RECORDS_DIFFERENCE_COUNT} CHANGES FOUND` : 'REFERENCE IMAGE'}</span></figcaption>
         <div className="records-difference-image" onClick={altered ? handleCanvasMisclick : undefined}>
           <img
-            src={altered ? '/images/records-centre-altered.svg' : '/images/records-centre.png'}
+            src="/images/records-centre.png"
             alt={altered ? 'Current records-centre image with five small added details' : 'Original records-centre reference image'}
           />
+          {altered && <img className="records-difference-overlay" src="/images/records-centre-altered.svg" alt="" aria-hidden="true" />}
           {altered && RECORDS_DIFFERENCES.map((difference) => {
             const isFound = foundSet.has(difference.id)
             const isHinted = hintTarget === difference.id

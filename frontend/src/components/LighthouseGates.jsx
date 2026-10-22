@@ -373,7 +373,7 @@ function LighthouseGates({ game, setGame, onEnterFacility, onReturnToMenu }) {
   }
 
   return (
-    <main className={`gates-scene${tensionRaised ? ' gates-scene--tense' : ''}`}>
+    <main className="gates-scene">
       <header className="gates-header">
         <div>
           <button type="button" className="gates-wordmark gates-menu-button" onClick={onReturnToMenu}>AFTERHOURS</button>
