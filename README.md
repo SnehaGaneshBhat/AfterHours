@@ -1,6 +1,6 @@
 # AFTERHOURS
 
-A supernatural investigation at a remote lighthouse facility, where an impossible access record points to an intruder.
+A supernatural investigation at a remote lighthouse facility, where an impossible access record points to an intruder.<br>
 Strands Decider 2B shapes pacing from player behavior; deterministic game rules keep puzzles and evidence under game control.
 
 ![AFTERHOURS landing screen](docs/images/afterhours-gameplay.png)
