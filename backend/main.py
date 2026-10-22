@@ -1,5 +1,6 @@
 
 import json
+import math
 import os
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -23,11 +24,18 @@ DECIDER_URL = os.getenv(
 )
 
 DECIDER_MODEL_ID = "strands-decider-2B-hobson-v19"
+FRONTEND_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv(
+        "FRONTEND_ORIGINS",
+        "http://localhost:5173,http://127.0.0.1:5173",
+    ).split(",")
+    if origin.strip()
+]
 
 DIRECTOR_ACTIONS = {
-    "HINT": "Give a useful hint about evidence already discovered.",
+    "HINT": "Offer a context-appropriate hint using only verified game facts.",
     "RAISE_TENSION": "Increase suspense without changing game mechanics.",
-    "OPEN_SHORTCUT": "Offer an alternate route only when the game engine permits it.",
     "WAIT": "Take no intervention; let the player continue exploring.",
 }
 
@@ -39,7 +47,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=FRONTEND_ORIGINS,
     allow_credentials=False,
     allow_methods=["GET", "POST"],
     allow_headers=["Content-Type"],
@@ -55,6 +63,7 @@ class NarrationRequest(BaseModel):
     room_name: str = Field(min_length=1, max_length=100)
     event: str = Field(min_length=1, max_length=300)
     verified_facts: list[str] = Field(max_length=10)
+    recent_narration: list[str] = Field(default_factory=list, max_length=4)
 
 
 class NarrationResponse(BaseModel):
@@ -64,7 +73,7 @@ class NarrationResponse(BaseModel):
 
 class DirectorDecisionRequest(BaseModel):
     state: str = Field(min_length=1, max_length=3000)
-    allowed_actions: list[str] = Field(min_length=1, max_length=4)
+    allowed_actions: list[str] = Field(min_length=1, max_length=3)
 
 
 class DirectorDecisionResponse(BaseModel):
@@ -85,6 +94,9 @@ def health():
 
 @app.post("/api/director/narrate", response_model=NarrationResponse)
 def narrate(request: NarrationRequest):
+    recent_narration = "\n".join(
+        f"- {line[:300]}" for line in request.recent_narration[-4:]
+    )
     facts = "\n".join(
         f"- {fact[:300]}" for fact in request.verified_facts
     )
@@ -104,9 +116,13 @@ LATEST VERIFIED GAME EVENT:
 VERIFIED FACTS:
 {facts or "- No additional facts supplied."}
 
+RECENT NARRATION FOR CONTINUITY:
+{recent_narration or "- This is the opening narration."}
+
 RULES:
 - Write 2 to 4 concise sentences of atmospheric narrative.
 - Stay consistent with the supplied event and verified facts.
+- Treat recent narration as continuity context only; verified facts are the only source of game state.
 - Do not invent clues, evidence, access codes, or player actions.
 - Do not claim a door opened or a puzzle was solved unless the
   supplied facts explicitly establish that.
@@ -130,9 +146,22 @@ RULES:
             },
         )
 
-        content = response["output"]["message"]["content"]
+        try:
+            content = response["output"]["message"]["content"]
+        except (KeyError, TypeError):
+            raise HTTPException(
+                status_code=502,
+                detail="The narrative model returned a malformed response.",
+            ) from None
+        if not isinstance(content, list):
+            raise HTTPException(
+                status_code=502,
+                detail="The narrative model returned a malformed response.",
+            )
         narration = "\n".join(
-            item["text"] for item in content if "text" in item
+            item["text"]
+            for item in content
+            if isinstance(item, dict) and isinstance(item.get("text"), str)
         ).strip()
 
         if not narration:
@@ -149,7 +178,7 @@ RULES:
     except HTTPException:
         raise
     except (BotoCoreError, ClientError) as exc:
-        print(f"Bedrock request failed: {type(exc).__name__}: {exc}")
+        print(f"Bedrock request failed: {type(exc).__name__}")
         raise HTTPException(
             status_code=502,
             detail="Narrative generation failed. Check backend logs.",
@@ -222,7 +251,27 @@ def decide(request: DirectorDecisionRequest):
             detail="The Director decision service is unavailable or timed out.",
         ) from exc
 
-    answer = result.get("answers", {}).get("director_action", {})
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        print(f"Decider response parsing failed: {type(exc).__name__}")
+        raise HTTPException(
+            status_code=502,
+            detail="The Director decision service returned malformed JSON.",
+        ) from exc
+
+    if not isinstance(result, dict):
+        raise HTTPException(
+            status_code=502,
+            detail="The Decider returned a malformed response.",
+        )
+
+    answers = result.get("answers")
+    answer = answers.get("director_action") if isinstance(answers, dict) else None
+    if not isinstance(answer, dict):
+        raise HTTPException(
+            status_code=502,
+            detail="The Decider response did not contain a valid action answer.",
+        )
+
     proposed_action = answer.get("choice")
 
     # Defense in depth: never return an action the caller did not permit.
@@ -231,18 +280,42 @@ def decide(request: DirectorDecisionRequest):
             status_code=502,
             detail="The Decider returned an action that was not permitted.",
         )
-    else:
-        confidence = answer.get("confidence")
-        probabilities = answer.get("probabilities") or {}
+    confidence = answer.get("confidence")
+    if (
+        isinstance(confidence, bool)
+        or not isinstance(confidence, (int, float))
+        or not math.isfinite(confidence)
+    ):
+        confidence = None
 
-    if not isinstance(probabilities, dict):
-        probabilities = {}
+    raw_probabilities = answer.get("probabilities")
+    probabilities = {}
+    if isinstance(raw_probabilities, dict):
+        probabilities = {
+            action: value
+            for action, value in raw_probabilities.items()
+            if isinstance(action, str)
+            and not isinstance(value, bool)
+            and isinstance(value, (int, float))
+            and math.isfinite(value)
+        }
+
+    model = result.get("model", DECIDER_MODEL_ID)
+    if not isinstance(model, str):
+        model = DECIDER_MODEL_ID
+    latency_ms = result.get("latency_ms")
+    if (
+        isinstance(latency_ms, bool)
+        or not isinstance(latency_ms, (int, float))
+        or not math.isfinite(latency_ms)
+    ):
+        latency_ms = None
 
     return DirectorDecisionResponse(
         action=proposed_action,
         confidence=confidence,
         probabilities=probabilities,
-        model=result.get("model", DECIDER_MODEL_ID),
-        latency_ms=result.get("latency_ms"),
+        model=model,
+        latency_ms=latency_ms,
     )
     

@@ -30,13 +30,11 @@ function LandingPage({ onEnter }) {
           </h1>
 
           <p className="hero-description">
-            You woke up in a facility that says you never left.
-            Your access card is dated tomorrow.
-            And someone has already been here.
+            You are an agent of AFTERHOURS, a covert organization that identifies people with extraordinary abilities, records them, and studies their powers. Someone is trying to access the organization’s most sensitive information—and the breach may already be inside.
           </p>
 
           <button className="enter-button" onClick={onEnter}>
-            <span>ENTER THE FACILITY</span>
+            <span>ENTER THE GAME</span>
             <span className="button-arrow">&gt;</span>
           </button>
 

@@ -1,5 +1,6 @@
 
 import { useState } from 'react'
+import { apiUrl } from '../game/api.js'
 import { ROOMS, inspectObject, attemptCodeUnlock } from '../game/game'
 import { unlockRestrictedRecords } from '../game/progression'
 import SecurityPuzzle from './SecurityPuzzle'
@@ -46,7 +47,7 @@ async function examineObject(object) {
 
   try {
     const response = await fetch(
-      'http://127.0.0.1:8000/api/director/narrate',
+      apiUrl('/api/director/narrate'),
       {
         method: 'POST',
         headers: {
@@ -82,7 +83,7 @@ async function requestDirectorDecision(stateDescription) {
 
   try {
     const response = await fetch(
-      'http://127.0.0.1:8000/api/director/decide',
+      apiUrl('/api/director/decide'),
       {
         method: 'POST',
         headers: {

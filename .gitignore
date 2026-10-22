@@ -14,6 +14,9 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
 
 # Node / frontend
 node_modules/
@@ -35,3 +38,10 @@ Thumbs.db
 
 # Local backups
 src-backup-before-cinematic/
+
+# Local model caches and checkpoint weights (never commit model downloads)
+**/.cache/huggingface/
+**/huggingface-cache/
+head.safetensors
+adapter_model.safetensors
+model.safetensors*

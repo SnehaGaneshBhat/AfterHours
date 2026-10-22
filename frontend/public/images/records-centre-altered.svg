@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1586" height="992" viewBox="0 0 1586 992">
+  <image href="/images/records-centre.png" x="0" y="0" width="1586" height="992" />
+  <g aria-label="Five small details added to the current archive image">
+    <!-- A file tab protrudes from the paper stack on the desk. -->
+    <path d="M802 627h25l9 9-10 9h-24z" fill="#b9ad91" fill-opacity=".88" stroke="#554c3f" stroke-width="2" />
+    <path d="M806 633h17" stroke="#794a47" stroke-width="2" stroke-opacity=".85" />
+
+    <!-- An access card rests beside the keyboard. -->
+    <g transform="rotate(-8 775 750)">
+      <rect x="749" y="735" width="52" height="31" rx="3" fill="#496a70" fill-opacity=".92" stroke="#a8c7c2" stroke-opacity=".76" stroke-width="2" />
+      <path d="M754 743h42M756 753h12" stroke="#b7d9d5" stroke-opacity=".7" stroke-width="2" />
+      <circle cx="791" cy="757" r="3" fill="#69dbe6" fill-opacity=".78" />
+    </g>
+
+    <!-- A small evidence tag is tied to a filing-cabinet handle. -->
+    <path d="M1310 465v12" stroke="#b8bfc0" stroke-opacity=".72" stroke-width="2" />
+    <path d="M1305 477h17l8 8-8 9h-17z" fill="#8b3439" fill-opacity=".94" stroke="#d07b79" stroke-width="2" />
+    <circle cx="1310" cy="485" r="2" fill="#dfcbb3" />
+
+    <!-- A single exposed fastener catches a trace of cool light on the floor. -->
+    <path d="m1038 849 7-4 7 4v8l-7 4-7-4z" fill="#46565a" stroke="#a5b8b7" stroke-opacity=".78" stroke-width="2" />
+    <path d="M1042 853h6" stroke="#d0d9d4" stroke-opacity=".72" stroke-width="1.5" />
+
+    <!-- A fine hair catches the light on the wet floor. -->
+    <path d="M1070 835c8-12 13 11 21 0s13 7 20-6" fill="none" stroke="#d8d0bd" stroke-opacity=".82" stroke-width="2.2" stroke-linecap="round" />
+  </g>
+</svg>

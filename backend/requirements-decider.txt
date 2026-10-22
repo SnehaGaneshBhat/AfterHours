@@ -1,0 +1,3 @@
+# Optional local model server. Installing this pulls PyTorch and other large dependencies.
+-r requirements.txt
+strands-decider==0.1.0

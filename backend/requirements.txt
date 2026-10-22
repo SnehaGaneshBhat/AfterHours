@@ -1,0 +1,4 @@
+# Runtime dependencies for the FastAPI bridge; versions match the inspected environment.
+boto3==1.43.114
+fastapi==0.143.3
+uvicorn==0.54.0
