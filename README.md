@@ -1,57 +1,219 @@
 # AFTERHOURS
 
-A supernatural investigation at a remote lighthouse facility, where an impossible access record points to an intruder.<br>
-Strands Decider 2B shapes pacing from player behavior; deterministic game rules keep puzzles and evidence under game control.
+**The light is still on. The access log says you were here before you arrived.**
 
+A supernatural investigation game powered by Amazon Bedrock and Strands Decider 2B.
+
+You have arrived at a remote lighthouse facility operated by a covert organization that studies people with extraordinary abilities. Something is wrong. An access record places you inside the facility before you arrived.
+
+Your task is to investigate the facility, examine evidence, solve its puzzles, and uncover what happened.
+
+But the facility isn't the only thing responding to you.
+
+An AI director observes your progress and chooses when to offer assistance, when to intensify the atmosphere, and when to let the silence continue.
+
+**The objective isn't to make the AI solve the mystery. It's to make the mystery respond to the player.**
 ![AFTERHOURS landing screen](docs/images/afterhours-gameplay.png)
 
-## How Decider is used
+---
 
-1. The frontend sends verified room context and player telemetry to FastAPI, which asks Strands Decider 2B to choose **HINT**, **RAISE_TENSION**, or **WAIT**.
-2. The frontend validates the action; a hint uses authored clues, tension requests a separate Bedrock narration, and wait has no effect.
-3. Deterministic game logic alone checks puzzle answers, records evidence, and advances the episode.
+## The Experience
 
-## Quickstart
+AFTERHOURS combines a playable investigation with bounded, context-aware AI decisions.
 
-After the one-time setup in [the developer guide](docs/DEVELOPMENT.md), open three PowerShell terminals from the project root:
+- **Explore a mysterious facility.** Progress through locations including the gates, lighthouse, surveillance archive, and records centre.
+- **Investigate evidence.** Examine records and environmental clues to reconstruct an impossible sequence of events.
+- **Solve puzzles.** Discover the information needed to advance rather than relying on an AI-generated answer.
+- **Experience an adaptive atmosphere.** The AI director can choose between offering a hint, raising tension, or waiting.
+- **Reach an evidence-based conclusion.** Your collected evidence informs the ending of your investigation.
 
-1. Start the local Decider on a machine with enough memory. The checkpoint must already be cached.
+## Why Strands Decider 2B?
 
-   ```powershell
-   $checkpoint = Join-Path $env:HF_HUB_CACHE 'models--StrandsAgents--strands-decider-2B-hobson-v19\snapshots\bb282d786bc251fd4e3068de3ada9ddbb38127cd'; .\backend\.venv\Scripts\strands-decider.exe serve $checkpoint --host 127.0.0.1 --port 8001 --device cpu --model-name strands-decider-2B-hobson-v19
-   ```
+Many AI-powered games use language models primarily to generate dialogue. AFTERHOURS explores a different role: **using an AI model to choose how the experience should respond to the player.**
 
-2. Start the API from the backend directory.
+Strands Decider 2B is used to select among a small set of predefined interventions:
 
-   ```powershell
-   Set-Location backend; .\.venv\Scripts\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8000
-   ```
+| Decision | Intended effect |
+|---|---|
+| `HINT` | Offer contextual assistance when the player needs direction. |
+| `RAISE_TENSION` | Intensify the experience without handing over the solution. |
+| `WAIT` | Leave the player to investigate without unnecessary intervention. |
 
-3. Start the frontend from the frontend directory, then open http://127.0.0.1:5173.
+The director's decision is informed by available game context, such as player progress and interaction patterns.
 
-   ```powershell
-   Set-Location frontend; npm run dev -- --host 127.0.0.1
-   ```
+Amazon Bedrock supports the narrative-generation component, allowing the game to deliver atmospheric responses grounded in verified game information.
 
-The local CPU Decider is memory-intensive; the developer guide describes hardware and model setup. Live Bedrock narration also requires AWS credentials and model access.
+The result is a separation between **deciding how to respond** and **determining what is true in the game**.
 
-## The game
+## Architecture
 
-Investigate the lighthouse facility, inspect records and surveillance, and find five authored differences in the records comparison. Valid puzzle targets, evidence collection, and room progression are controlled by application logic. Behavior-triggered interventions can offer a clue, request a tension beat, or wait while the player continues.
+```text
+Player interaction
+        |
+        v
+Deterministic game state
+        |
+        v
+Strands Decider 2B
+        |
+        v
+Validated intervention
+   /       |        \
+ HINT   RAISE_TENSION  WAIT
+   \       |        /
+        v
+Game response
+        |
+        v
+Amazon Bedrock
+        |
+        v
+Context-grounded narration
+```
 
-## Architecture and reusable pattern
+The director does not own the game's underlying truth.
 
-The React frontend contains the game screens, state, puzzles, and action effects. The FastAPI backend bridges decision and narration requests. Strands Decider 2B selects from a caller-provided action set; Amazon Bedrock generates narration from verified game facts.
+- **Deterministic game logic** controls puzzle validation, evidence collection, and progression.
+- **Strands Decider 2B** chooses from a constrained set of interventions.
+- **Decision validation** restricts the response to supported actions and provides a fallback for invalid output.
+- **Amazon Bedrock** supports narrative generation based on the verified game context.
+- **The frontend** presents the investigation, puzzle interactions, evidence, and resulting responses.
 
-The reusable constrained decision pattern is implemented in [frontend/src/game/director.js](frontend/src/game/director.js), explained in [frontend/src/game/DIRECTOR_PATTERN.md](frontend/src/game/DIRECTOR_PATTERN.md), and covered by [frontend/src/game/director.test.js](frontend/src/game/director.test.js). The model chooses an intervention; the application separately validates it and applies any game effect.
+This division is intentional. The AI can influence the experience without being allowed to invent evidence, bypass puzzle requirements, or independently advance the investigation.
 
-See the [developer guide](docs/DEVELOPMENT.md) for architecture details, configuration, installation, tests, and the repository map.
+## A Reusable Pattern: The Constrained AI Director
 
-## Project links
+AFTERHOURS demonstrates a reusable pattern for interactive AI applications:
 
-- [Public GitHub repository](https://github.com/SnehaGaneshBhat/AfterHours)
-- [AWS Agent Experience Hackathon](https://builder.aws.com/build/hackathons/4f50957c-1d08-37ab-b11c-97516b9adeb4/agent-experience-hackathon?tab=about)
+1. **Observe:** Gather relevant, verified application state.
+2. **Decide:** Ask the model to choose among a predefined set of actions.
+3. **Validate:** Check the proposed decision against the application's allowed actions.
+4. **Execute:** Let deterministic application logic apply the permitted effect.
+5. **Narrate:** Generate an appropriate response grounded in the resulting state.
 
-## License and artwork
+This pattern is useful when an application benefits from adaptive AI behavior but cannot safely delegate its core rules to a model.
 
-Original project source code is licensed under [Zero-Clause BSD (0BSD)](LICENSE), an OSI-approved license. The game’s visual artwork was generated using OpenAI’s image-generation tools for this project. The source-code license does not automatically determine the licensing of every asset. Third-party fonts, libraries, and model weights retain their respective terms.
+Potential applications include adaptive game difficulty, interactive storytelling, tutoring systems, guided simulations, and context-sensitive assistance.
+
+## Technology Stack
+
+- **Strands Decider 2B** — constrained intervention selection
+- **Amazon Bedrock** — AI-powered narrative generation
+- **Python / FastAPI** — backend services
+- **React / Vite** — interactive frontend
+- **JavaScript** — frontend game interactions and state presentation
+
+## Running Locally
+
+### Prerequisites
+
+- Python and Node.js installed
+- AWS credentials configured for an account with access to the required Amazon Bedrock model
+- The Strands Decider 2B model and its required dependencies available according to the project's configuration
+
+> **Hardware note:** Running Strands Decider 2B locally on CPU can require substantial memory. A machine with limited RAM may struggle. Use an appropriately provisioned machine or a supported remote setup for the director service.
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/SnehaGaneshBhat/AfterHours.git
+cd AfterHours
+```
+
+### 2. Configure the backend
+
+```bash
+cd backend
+python -m venv .venv
+```
+
+Activate the environment.
+
+Windows PowerShell:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+Install the project dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+If your setup requires the separate Decider dependency set, consult `requirements-decider.txt` and the project's configuration before installing it.
+
+Configure the backend environment using `.env.example` as a reference. Set the AWS region, credentials, model configuration, and any required Decider service settings. Do not commit secrets or real credentials.
+
+Start the backend from the `backend` directory:
+
+```bash
+uvicorn main:app --host 127.0.0.1 --port 8000
+```
+
+### 3. Configure the frontend
+
+In a second terminal:
+
+```bash
+cd frontend
+npm install
+```
+
+Configure the frontend using its `.env.example` file, including the backend API origin if required by your setup.
+
+Start the development server:
+
+```bash
+npm run dev
+```
+
+Open the local URL printed by Vite.
+
+**Note:** Exact environment-variable names and model requirements are defined by the current project configuration. A successful frontend launch alone does not verify that the Decider and Bedrock integrations are operational.
+
+## Testing
+
+From the `frontend` directory:
+
+```bash
+npm test
+npm run lint
+npm run build
+```
+
+These checks cover the frontend test suite, linting, and production build. They do not by themselves establish that a live AWS request, local Decider inference, or a complete browser playthrough succeeds.
+
+## Project Structure
+
+```text
+AfterHours/
+├── backend/
+│   ├── main.py
+│   ├── requirements.txt
+│   ├── requirements-decider.txt
+│   └── .env.example
+├── frontend/
+│   ├── public/
+│   ├── src/
+│   ├── package.json
+│   └── .env.example
+├── LICENSE
+└── README.md
+```
+
+## Hackathon
+
+Built for the AWS Agent Experience Hackathon, exploring policy-based intervention selection with Strands Decider 2B and Amazon Bedrock.
+
+**Tags:** `#strands-decider-2b` `#policy`
+
+## License
+
+The original project source code is licensed under the [Zero-Clause BSD (0BSD) License](LICENSE).
+
+The game's visual artwork was generated using OpenAI's image-generation tools for this project. Third-party libraries, models, and other dependencies remain subject to their respective licenses and terms.
+
+---
+
+*The investigation is yours. Deciding when to intervene is the agent's.*
